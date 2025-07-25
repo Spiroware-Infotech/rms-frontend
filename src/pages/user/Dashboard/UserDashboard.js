@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { avatar_img } from "../../../utils/constant";
 import { getToken, getTokenType } from '../../../utils/helper/helper';
-import { jwtDecode } from "jwt-decode";
 import { Link } from "react-router-dom";
+import UserHeader from './UserHeader';
+
 
 const fetchUserData = async () => {
   const token = getToken();
   const tokenType = getTokenType();
+  const userId = localStorage.getItem("userId");
+
   const headers = {
     "Content-Type": "application/json",
     Authorization: `${tokenType} ${token}`,
   };
+  
+
 
   let userProfile = {
     firstname: "",
@@ -18,33 +23,42 @@ const fetchUserData = async () => {
     country: "",
   };
 
-  try {
-    const decoded = jwtDecode(token);
-    userProfile.firstname = decoded.firstname || decoded.sub || "User";
-    userProfile.lastname = decoded.lastname || "";
-    userProfile.country = decoded.country || "";
-  } catch (err) {
-    console.error("Failed to decode token for user profile:", err);
-  }
-
   let reviews = [];
   let stats = { reviews: 0, reads: 0, useful: 0 };
-  const userId = localStorage.getItem("userId");
+  
 
   try {
-    const res = await fetch(
-      `https://spiroware.com/reviewssystem/api/v1/user/reviews/${userId}`,
-      { headers }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      reviews = Array.isArray(data.data) ? data.data : [];
+    // Fetch user profile
+    const userRes = await fetch(`https://spiroware.com/reviewssystem/api/v1/user/${userId}`, {
+      headers,
+    });
+    const userData = await userRes.json();
+    if (userRes.ok && userData.success) {
+      userProfile = {
+        firstname: userData.data.firstname,
+        lastname: userData.data.lastname,
+        country: userData.data.country,
+      };
+    } else {
+      console.error("❌ Failed to fetch user profile:", userData.message);
+    }
+
+    // Fetch user reviews
+    const reviewsRes = await fetch(`https://spiroware.com/reviewssystem/api/v1/user/reviews/${userId}`, {
+      headers,
+    });
+    const reviewsData = await reviewsRes.json();
+
+    if (reviewsRes.ok && reviewsData.success) {
+      reviews = Array.isArray(reviewsData.data) ? reviewsData.data : [];
       stats.reviews = reviews.length;
       stats.reads = reviews.length;
       stats.useful = reviews.reduce((sum, r) => sum + (r.likes || 0), 0);
+    } else {
+      console.error("❌ Failed to fetch reviews:", reviewsData.message);
     }
   } catch (err) {
-    console.error("Failed to fetch reviews:", err);
+    console.error("❌ Error fetching dashboard data:", err);
   }
 
   return {
@@ -66,11 +80,6 @@ function Dashboard() {
     const userId = localStorage.getItem("userId");
     console.log("Trying to delete review with:", { userId, reviewId });
 
-    if (!userId || isNaN(Number(userId))) {
-      console.error("Invalid user ID");
-      return;
-    }
-
     const token = getToken();
     const tokenType = getTokenType();
     const headers = {
@@ -84,15 +93,7 @@ function Dashboard() {
         { method: "DELETE", headers }
       );
 
-      let result;
-      try {
-        result = await res.json();
-      } catch (err) {
-        const text = await res.text();
-        console.error("Non-JSON response from server:", text);
-        return;
-      }
-
+      const result = await res.json();
       if (res.ok && result.success) {
         setUserData((prev) => {
           const deletedReview = prev.reviews.find((r) => r.revId === reviewId);
@@ -128,7 +129,8 @@ function Dashboard() {
 
   return (
     <main className="margin_main_container">
-      <div className="user_summary">
+      <UserHeader />
+      {/* <div className="user_summary">
         <div className="wrapper">
           <div className="container">
             <div className="row">
@@ -149,7 +151,7 @@ function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="container margin_60_35">
         <div className="row">
@@ -202,9 +204,11 @@ function Dashboard() {
 
           <div className="col-lg-4">
             <div className="box_general general_info">
-              <h3>Edit Your Personal Details</h3>
-              <p>Is there any corrections in your registration. Please edit here.</p>
-              <Link to="/user/editdetails">Click Here</Link>
+              <Link to="/user/editdetails"><h3>Edit Your Personal Details<i className="pe-7s-help1"></i></h3></Link>
+              <p>Edit your details here.</p>
+              <hr />
+              <Link to="/user/changepassword"><h3>Change Your Password<i className="pe-7s-help1"></i></h3></Link>
+              <p>Change here.</p>
               <hr />
               <h3>Delete a review <i className="pe-7s-help1"></i></h3>
               <p>Manage and delete your reviews from here.</p>

@@ -25,6 +25,7 @@ import UserRegisterPage from "./pages/UserRegisterPage";
 import UserDashboard from "./pages/user/Dashboard/UserDashboard";
 import ReviewForm from "./pages/user/ReviewForm/ReviewForm";
 import EditDetails from "./pages/user/Dashboard/EditDetails";
+import ChangePassword from "./pages/user/Dashboard/ChangePassword";
 // import CompanyListingPage from "./pages/CompanyListingPage/CompanyListingPage";
 
 // import Footer from "./components/CommonComponent/Footer";
@@ -70,6 +71,7 @@ const AppRoutesWithLayout = () => {
           
           <Route path={AppRoutes.UserDashboard} element={<UserDashboard />} />
           <Route path={AppRoutes.EditDetails} element={<EditDetails />} />
+          <Route path={AppRoutes.ChangePassword} element={<ChangePassword />} />
           {/* Add all other routes that need header/footer here */}
         </Route>
       </Routes>

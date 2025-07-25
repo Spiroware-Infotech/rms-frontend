@@ -16,7 +16,8 @@ export const AppRoutes = {
   VerificationPage:'/verification',
   UserRegisterPage: "/userregister",
   UserDashboard: "/user/dashboard",
-  EditDetails: "/user/editdetails"
+  EditDetails: "/user/editdetails",
+  ChangePassword:"/user/changepassword"
 };
 
 
