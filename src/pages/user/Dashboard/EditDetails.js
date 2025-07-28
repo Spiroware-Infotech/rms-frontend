@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { getToken, getTokenType } from "../../../utils/helper/helper";
-import { avatar_img } from "../../../utils/constant";
 import { useNavigate } from "react-router-dom";
-
+import { Link } from "react-router-dom";
+import UserHeader from "./UserHeader";
 
 const EditDetails = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
   const navigate = useNavigate();
+
+  const [userId, setUserId] = useState("");
   const [profile, setProfile] = useState({
     firstname: "",
     lastname: "",
@@ -20,10 +22,17 @@ const EditDetails = () => {
     zipcode: "",
     address: "",
     phoneNumber: "",
-    stats: { reviews: 0, reads: 0, useful: 0 }
   });
-  
-  const userId = localStorage.getItem("userId");
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userId");
+    if (storedUserId) {
+      setUserId(storedUserId);
+    } else {
+      setSuccessMessage("❌ User ID not found. Please log in again.");
+      setMessageType("error");
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -35,6 +44,7 @@ const EditDetails = () => {
         setMessageType("error");
         return;
       }
+
       const headers = {
         "Content-Type": "application/json",
         Authorization: `${tokenType} ${token}`,
@@ -49,21 +59,24 @@ const EditDetails = () => {
         const data = await res.json();
 
         if (res.ok && data.success && data.data) {
-          setProfile((prev) => ({ ...prev, ...data.data,
-          gender: data.data.gender || localStorage.getItem("gender") || "",
-          zipcode: data.data.zipcode || localStorage.getItem("zipcode") || "",
-          address: data.data.address || localStorage.getItem("address") || "",
-          state: data.data.state || localStorage.getItem("state") || "",
-          country: data.data.country || localStorage.getItem("country") || "",
-          city: data.data.city || localStorage.getItem("city") || "", }));
-          console.log("✅ User details loaded:", data.data);
+          setProfile((prev) => ({
+            ...prev,
+            ...data.data,
+          }));
+          console.log("✅ Profile loaded:", data.data);
+        } else {
+          setSuccessMessage("❌ Failed to load user details.");
+          setMessageType("error");
         }
       } catch (err) {
-        setSuccessMessage("❌ Server error while fetching details.");
+        setSuccessMessage("❌ Server error while fetching profile.");
         setMessageType("error");
       }
     };
-    fetchUserDetails();
+
+    if (userId) {
+      fetchUserDetails();
+    }
   }, [userId]);
 
   const handleProfileChange = (e) => {
@@ -75,12 +88,6 @@ const EditDetails = () => {
     e.preventDefault();
     const token = getToken();
     const tokenType = getTokenType();
-    localStorage.setItem("gender", profile.gender);
-    localStorage.setItem("zipcode", profile.zipcode);
-    localStorage.setItem("address", profile.address);
-    localStorage.setItem("city", profile.city);
-    localStorage.setItem("country", profile.country);
-    localStorage.setItem("state", profile.state);
 
     if (!token || !userId) {
       setSuccessMessage("❌ Authorization token or user ID not found. Please log in.");
@@ -101,24 +108,18 @@ const EditDetails = () => {
         }
       );
 
-      let result;
-      try {
-        result = await res.json();
-      } catch (err) {
-        setSuccessMessage("❌ Server returned an invalid response.");
-        setMessageType("error");
-        return;
-      }
-
-      console.log(result);
+      const result = await res.json();
 
       if (res.ok && result.success) {
         setSuccessMessage("✅ Profile updated successfully!");
         setMessageType("success");
         setTimeout(() => {
-        navigate("/user/dashboard");
-  },1500);
-      } 
+          navigate("/user/dashboard");
+        }, 500);
+      } else {
+        setSuccessMessage("❌ Failed to update profile.");
+        setMessageType("error");
+      }
     } catch (err) {
       setSuccessMessage("❌ Network/server error during update.");
       setMessageType("error");
@@ -127,28 +128,7 @@ const EditDetails = () => {
 
   return (
     <main className="margin_main_container">
-      <div className="user_summary">
-        <div className="wrapper">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-6">
-                <figure>
-                  <img src={avatar_img} alt="User" />
-                </figure>
-                <h1>{profile.firstname} {profile.lastname}</h1>
-                <span>{profile.country}</span>
-              </div>
-              <div className="col-md-6">
-                <ul>
-                  <li><strong>{profile.stats.reviews}</strong> <i className="icon_star"></i> Reviews</li>
-                  <li><strong>{profile.stats.reads}</strong> <i className="icon-user-1"></i> Reads</li>
-                  <li><strong>{profile.stats.useful}</strong> <i className="icon_like_alt"></i> Useful</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UserHeader /> {/* ✅ Common header reused */}
 
       <div className="container margin_60_35">
         <div className="row">
@@ -159,142 +139,79 @@ const EditDetails = () => {
               <form onSubmit={handleProfileSubmit}>
                 <div className="form-group">
                   <label>Firstname</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="firstname"
-                    value={profile.firstname}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="firstname" value={profile.firstname} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Lastname</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="lastname"
-                    value={profile.lastname}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="lastname" value={profile.lastname} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Email</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="email"
-                    value={profile.email}
-                    onChange={handleProfileChange}
-                    readOnly
-                  />
+                  <input className="form-control" type="text" name="email" value={profile.email} onChange={handleProfileChange} readOnly />
                 </div>
-
                 <div className="form-group">
                   <label>Username</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="username"
-                    value={profile.username}
-                    onChange={handleProfileChange}
-                    readOnly
-                  />
+                  <input className="form-control" type="text" name="username" value={profile.username} onChange={handleProfileChange} readOnly />
                 </div>
-
                 <div className="form-group">
                   <label>Gender</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="gender"
-                    value={profile.gender}
-                    onChange={handleProfileChange}
-                  />
+                  <select className="form-control" name="gender" value={profile.gender} onChange={handleProfileChange} required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </div>
-
                 <div className="form-group">
                   <label>City</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="city"
-                    value={profile.city}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="city" value={profile.city} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>State</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="state"
-                    value={profile.state}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="state" value={profile.state} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Country</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="country"
-                    value={profile.country}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="country" value={profile.country} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Zipcode</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="zipcode"
-                    value={profile.zipcode}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="zipcode" value={profile.zipcode} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Address</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="address"
-                    value={profile.address}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="address" value={profile.address} onChange={handleProfileChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Phone Number</label>
-                  <input
-                    className="form-control"
-                    type="text"
-                    name="phoneNumber"
-                    value={profile.phoneNumber}
-                    onChange={handleProfileChange}
-                  />
+                  <input className="form-control" type="text" name="phoneNumber" value={profile.phoneNumber} onChange={handleProfileChange} />
                 </div>
-
                 <p className="text-end">
-                  <button className="btn_1 small add_top_15" type="submit">
-                    Save personal info
-                  </button>
+                  <button className="btn_1 small add_top_15" type="submit">Save personal info</button>
                 </p>
               </form>
 
               {successMessage && (
-                <div
-                  className={`alert alert-${messageType === "error" ? "danger" : "success"}`}
-                  role="alert"
-                >
+                <div className={`alert alert-${messageType === "error" ? "danger" : "success"}`} role="alert">
                   {successMessage}
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="col-lg-4">
+            <div className="box_general general_info">
+              <Link to="/user/changepassword"><h3>Change Your Password<i className="pe-7s-help1"></i></h3></Link>
+              <p>Change here.</p>
+              <hr />
+              <h3>Delete a review <i className="pe-7s-help1"></i></h3>
+              <p>Manage and delete your reviews from here.</p>
+              <hr />
+              <h3>Post a review <i className="pe-7s-help1"></i></h3>
+              <p>Share your thoughts and feedback.</p>
+              <hr />
+              <div className="text-center">
+                <a href="faq.html" className="btn_1 small">View all FAQs</a>
+              </div>
             </div>
           </div>
         </div>

@@ -40,10 +40,13 @@ const LoginPage = () => {
         console.log(role, "role");
 
         console.log(response, "loginresponse");
+        const userId = response.data.user.userId;
+        console.log("✅ Correct userId:", userId);
 
         console.log("Access Token:", accessToken);
         console.log("Token Type:", tokenType);
         saveAuth(accessToken, tokenType);
+        localStorage.setItem("userId", userId);
         localStorage.setItem("isUserRegistered", "true");
         setIsUserRegistered(true);
         setUserRole(role);
